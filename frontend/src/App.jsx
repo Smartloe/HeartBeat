@@ -744,9 +744,10 @@ export default function App() {
             <span />
           </div>
           <div className="intro-card">
-            <h1>不用会员 听你所想</h1>
+            <div className="intro-ribbon" />
+            <h1>随心所动 且听风吟</h1>
             <h2>
-              <span className="intro-emphasis">随心所动 且听风吟</span>
+              <span className="intro-emphasis">不用会员 听你所想</span>
             </h2>
             <div className="intro-stars">
               <span />

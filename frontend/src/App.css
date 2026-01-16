@@ -41,27 +41,31 @@ body {
   place-items: center;
   z-index: 50;
   animation: introFade 2.6s ease forwards;
+  overflow: hidden;
 }
 
 .intro-card {
-  background: #fffaf4;
+  background: rgba(255, 250, 244, 0.92);
   border: 1px solid #f0d7c4;
   border-radius: 28px;
-  padding: 32px 40px;
+  padding: 38px 54px;
   text-align: center;
-  box-shadow: 0 30px 80px rgba(89, 52, 28, 0.18);
+  box-shadow: 0 30px 80px rgba(89, 52, 28, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
   animation: introPop 2.6s ease forwards;
   max-width: 520px;
+  position: relative;
 }
 
 .intro-card h1 {
   margin: 12px 0 6px;
   font-family: "ZCOOL XiaoWei", "Clash Display", serif;
-  font-size: 26px;
+  font-size: 28px;
+  letter-spacing: 0.06em;
 }
 
 .intro-card h2 {
-  margin: 0;
+  margin: 6px 0 0;
   font-size: 16px;
   color: #8b6f5d;
 }
@@ -69,9 +73,12 @@ body {
 .intro-emphasis {
   display: inline-block;
   font-family: "ZCOOL XiaoWei", "Clash Display", serif;
-  font-size: 20px;
-  color: #7a4b33;
-  letter-spacing: 0.06em;
+  font-size: 22px;
+  color: #6e3d28;
+  letter-spacing: 0.12em;
+  background: linear-gradient(90deg, #8b5336, #c17952);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .intro-clouds span {
@@ -131,6 +138,15 @@ body {
   background: #ffd4b5;
   box-shadow: 0 0 14px rgba(255, 170, 120, 0.6);
   animation: twinkle 1.8s ease-in-out infinite;
+}
+
+.intro-ribbon {
+  position: absolute;
+  inset: 12px 14px auto;
+  height: 12px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ffe9d6, #fff7ef);
+  opacity: 0.9;
 }
 
 .intro-stars span:nth-child(2) {
