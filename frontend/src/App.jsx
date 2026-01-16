@@ -61,6 +61,7 @@ export default function App() {
     confirm: "",
   });
   const [passwordStatus, setPasswordStatus] = useState("");
+  const [showIntro, setShowIntro] = useState(true);
   const [volume, setVolume] = useState(0.8);
   const [isMuted, setIsMuted] = useState(false);
   const audioRef = useRef(null);
@@ -73,6 +74,11 @@ export default function App() {
   const peakRef = useRef([]);
   const lyricsBoxRef = useRef(null);
   const progressRef = useRef(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowIntro(false), 2600);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem("auth_token");
@@ -728,6 +734,28 @@ export default function App() {
 
   return (
     <div className="page">
+      {showIntro ? (
+        <div className="intro">
+          <div className="intro-clouds">
+            <span />
+            <span />
+            <span />
+            <span />
+            <span />
+          </div>
+          <div className="intro-card">
+            <h1>不用会员 听你所想</h1>
+            <h2>
+              <span className="intro-emphasis">随心所动 且听风吟</span>
+            </h2>
+            <div className="intro-stars">
+              <span />
+              <span />
+              <span />
+            </div>
+          </div>
+        </div>
+      ) : null}
       <div className={`dashboard ${lyricsOpen ? "lyrics-open" : ""}`}>
         <header className="topbar">
           <div className="logo">

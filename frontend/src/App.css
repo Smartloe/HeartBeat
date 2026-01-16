@@ -30,6 +30,167 @@ body {
   display: grid;
   place-items: center;
   padding: 40px 24px;
+  position: relative;
+}
+
+.intro {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at top, #fff5ef 0%, #f7e7d8 60%, #f3ddcc 100%);
+  display: grid;
+  place-items: center;
+  z-index: 50;
+  animation: introFade 2.6s ease forwards;
+}
+
+.intro-card {
+  background: #fffaf4;
+  border: 1px solid #f0d7c4;
+  border-radius: 28px;
+  padding: 32px 40px;
+  text-align: center;
+  box-shadow: 0 30px 80px rgba(89, 52, 28, 0.18);
+  animation: introPop 2.6s ease forwards;
+  max-width: 520px;
+}
+
+.intro-card h1 {
+  margin: 12px 0 6px;
+  font-family: "ZCOOL XiaoWei", "Clash Display", serif;
+  font-size: 26px;
+}
+
+.intro-card h2 {
+  margin: 0;
+  font-size: 16px;
+  color: #8b6f5d;
+}
+
+.intro-emphasis {
+  display: inline-block;
+  font-family: "ZCOOL XiaoWei", "Clash Display", serif;
+  font-size: 20px;
+  color: #7a4b33;
+  letter-spacing: 0.06em;
+}
+
+.intro-clouds span {
+  position: absolute;
+  width: 180px;
+  height: 80px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 999px;
+  filter: blur(6px);
+  animation: floatCloud 6s ease-in-out infinite;
+}
+
+.intro-clouds span:nth-child(1) {
+  top: 18%;
+  left: 12%;
+}
+
+.intro-clouds span:nth-child(2) {
+  top: 30%;
+  right: 16%;
+  width: 220px;
+  animation-delay: 1.4s;
+}
+
+.intro-clouds span:nth-child(3) {
+  bottom: 18%;
+  left: 20%;
+  width: 200px;
+  animation-delay: 2.4s;
+}
+
+.intro-clouds span:nth-child(4) {
+  top: 12%;
+  right: 34%;
+  width: 160px;
+  animation-delay: 0.8s;
+}
+
+.intro-clouds span:nth-child(5) {
+  bottom: 26%;
+  right: 10%;
+  width: 190px;
+  animation-delay: 1.8s;
+}
+
+.intro-stars {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.intro-stars span {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #ffd4b5;
+  box-shadow: 0 0 14px rgba(255, 170, 120, 0.6);
+  animation: twinkle 1.8s ease-in-out infinite;
+}
+
+.intro-stars span:nth-child(2) {
+  animation-delay: 0.4s;
+}
+
+.intro-stars span:nth-child(3) {
+  animation-delay: 0.8s;
+}
+
+@keyframes introFade {
+  0% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+@keyframes introPop {
+  0% {
+    transform: translateY(8px) scale(0.98);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-8px) scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes floatCloud {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.4);
+    opacity: 1;
+  }
 }
 
 .dashboard {
