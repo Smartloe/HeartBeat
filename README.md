@@ -64,6 +64,24 @@ logs/                    # Docker日志持久化目录（新增）
 
 ## 🐳 容器化部署 (推荐)
 
+### Ubuntu 22 安装 Docker (首次部署)
+
+```bash
+sudo apt update
+sudo apt install -y ca-certificates curl gnupg lsb-release
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+  https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo systemctl enable --now docker
+```
+
+安装后使用 `docker compose` 命令。若已安装独立版 Compose，也可使用 `docker-compose`。
+
 ### 生产环境一键部署
 
 ```bash
@@ -75,13 +93,13 @@ cd HeartBeat
 mkdir -p data/heartbeat logs/heartbeat
 
 # 3. 启动所有服务
-docker-compose up -d
+docker compose up -d
 
 # 4. 查看服务状态
-docker-compose ps
+docker compose ps
 
 # 5. 查看日志
-docker-compose logs -f
+docker compose logs -f
 ```
 
 服务启动后：
