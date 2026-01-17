@@ -35,13 +35,20 @@ HeartBeat/
 │   ├── src/              # 前端源代码
 │   ├── public/           # 静态资源
 │   ├── package.json      # 前端依赖
-│   └── vite.config.js    # Vite配置
+│   ├── Dockerfile       # 前端Docker配置（新增）
+│   ├── nginx.conf       # 生产环境Nginx配置（新增）
+│   └── vite.config.js   # Vite配置
 ├── backend/              # FastAPI 后端
 │   ├── app/             # 后端应用代码
 │   │   ├── main.py      # 主程序
 │   │   └── tunehub.sqlite # 数据库文件
+│   ├── Dockerfile       # 后端Docker配置（新增）
 │   └── requirements.txt  # Python依赖
-├── frontend-design/      # 设计文档
+data/                    # Docker数据持久化目录（新增）
+logs/                    # Docker日志持久化目录（新增）
+├── docker-compose.yml        # 主Docker Compose配置（新增）
+├── docker-compose.prod.yml   # 生产环境配置（新增）
+├── .env.example         # 环境变量示例
 ├── .gitignore           # Git忽略文件
 ├── README.md            # 项目说明
 └── TuneHub API Documentation.md  # 第三方API文档
@@ -53,6 +60,74 @@ HeartBeat/
 - Node.js 18+ (前端)
 - Python 3.8+ (后端)
 - npm 或 yarn (包管理)
+- Docker & Docker Compose v2.0+ (可选，用于容器化部署)
+
+## 🐳 容器化部署 (推荐)
+
+### 生产环境一键部署
+
+```bash
+# 1. 克隆项目
+git clone https://github.com/yourusername/HeartBeat.git
+cd HeartBeat
+
+# 2. 创建必要的目录
+mkdir -p data/heartbeat logs/heartbeat
+
+# 3. 启动所有服务
+docker-compose up -d
+
+# 4. 查看服务状态
+docker-compose ps
+
+# 5. 查看日志
+docker-compose logs -f
+```
+
+服务启动后：
+- 前端：http://localhost
+- 后端API：http://localhost:8000
+- 文档：http://localhost:8000/docs
+
+### 开发环境容器化启动
+
+```bash
+# 启动开发环境（包含热重载）
+docker-compose --profile development up
+
+# 或者分别启动前端和后端开发容器
+docker-compose up heartbeat-frontend-dev heartbeat-backend-dev
+```
+
+### 常用Docker命令
+
+```bash
+# 启动服务
+ docker-compose up -d
+
+# 停止服务
+docker-compose down
+
+# 重启特定服务
+docker-compose restart heartbeat-backend
+
+# 查看日志
+docker-compose logs -f heartbeat-backend
+
+# 进入容器
+docker-compose exec heartbeat-backend sh
+
+# 重新构建镜像
+docker-compose build --no-cache
+
+# 清理所有容器和镜像
+docker-compose down --rmi all --volumes
+
+# 生产环境部署（使用生产配置）
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+## 🛠️ 传统部署方式
 
 ### 1. 前端运行
 
@@ -236,6 +311,53 @@ export default defineConfig({
 - [TuneHub API](https://music-dl.sayqz.com) - 提供音乐数据
 - FastAPI - 优秀的Python Web框架
 - React + Vite - 现代前端开发工具链
+
+## 🐳 Docker 部署
+
+项目完整支持 Docker 容器化部署，包含以下特性：
+
+### Docker 配置文件
+- `Dockerfile` (frontend) - 前端多阶段构建Dockerfile
+- `Dockerfile` (backend) - 后端生产级Dockerfile
+- `docker-compose.yml` - 标准部署配置
+- `docker-compose.prod.yml` - 生产环境优化配置
+- `nginx.conf` - 前端生产环境Nginx配置
+
+### Docker 特性
+- 🔒 安全：使用非root用户运行，最小化权限
+- 📦 优化：多阶段构建，减小镜像体积
+- 💾 持久化：数据库和日志持久化存储
+- 🛡️ 健康检查：自动监控服务状态
+- 🔥 热重载：开发环境支持代码热重载
+- 🚀 水平扩展：生产环境支持容器水平扩展
+- 📊 日志管理：集中式日志配置
+
+### 生产环境建议
+
+1. **SSL配置**：配置HTTPS证书
+   ```bash
+   # 创建SSL证书目录
+   mkdir -p nginx/ssl
+   cp your-cert.crt nginx/ssl/
+   cp your-key.key nginx/ssl/
+   ```
+
+2. **负载均衡**：使用nginx作为反向代理
+   ```bash
+   docker-compose -f docker-compose.prod.yml up -d
+   ```
+
+3. **监控告警**：配置容器监控
+   ```bash
+   docker-compose --profile monitoring up
+   ```
+
+4. **自动部署**：集成CI/CD
+   ```
+   # 示例GitHub Actions配置
+   - docker-compose build
+   - docker-compose up -d
+   ```
 
 ## 📞 支持
 

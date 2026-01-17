@@ -1,0 +1,126 @@
+# HeartBeat 生产环境专用 Docker Compose 配置
+# 包含HTTPS、负载均衡和其他生产环境优化
+
+version: '3.8'
+
+services:
+  # Nginx 反向代理（生产环境推荐）
+  heartbeat-proxy:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/production.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./frontend/dist:/usr/share/nginx/html/frontend:ro
+    depends_on:
+      - heartbeat-backend
+    networks:
+      - heartbeat-network
+    restart: unless-stopped
+
+  # 前端优化版本（生产）
+  heartbeat-frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      target: production
+    expose:
+      - "80"                   # 仅暴露内部端口
+    depends_on:
+      - heartbeat-backend
+    environment:
+      - NODE_ENV=production
+      - VITE_API_BASE=/api
+    networks:
+      - heartbeat-network
+    restart: unless-stopped
+    deploy:
+      replicas: 2              # 水平扩展
+      update_config:
+        parallelism: 1
+        delay: 30s
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+
+  # 后端优化版本（生产）
+  heartbeat-backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: production
+    expose:
+      - "8000"                 # 仅暴露内部端口
+    environment:
+      - TUNEHUB_BASE_URL=https://music-dl.sayqz.com
+      - TUNEHUB_DB_PATH=/app/app/tunehub.sqlite
+      - GUNICORN_WORKERS=4     # 根据CPU核心数调整
+      - GUNICORN_TIMEOUT=120
+    volumes:
+      - heartbeat-data:/app/app
+    networks:
+      - heartbeat-network
+    restart: unless-stopped
+    deploy:
+      replicas: 2              # 水平扩展
+      update_config:
+        parallelism: 1
+        delay: 60s
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # 监控工具（可选）
+  heartbeat-monitor:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/monitor.conf:/etc/nginx/nginx.conf:ro
+      - heartbeat-logs:/var/log/heartbeat:ro
+    networks:
+      - heartbeat-network
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+volumes:
+  heartbeat-data:
+    driver: local
+  heartbeat-logs:
+    driver: local
+
+networks:
+  heartbeat-network:
+    driver: bridge
+
+# 生产环境使用说明：
+# 1. 配置SSL证书：
+#    mkdir -p nginx/ssl
+#    cp your-cert.crt nginx/ssl/
+#    cp your-key.key nginx/ssl/
+#
+# 2. 创建自定义nginx配置：
+#    mkdir -p nginx
+#    # 编辑 nginx/production.conf
+#
+# 3. 部署：
+#    docker-compose -f docker-compose.prod.yml up -d
+#
+# 4. 更新：
+#    docker-compose -f docker-compose.prod.yml pull
+#    docker-compose -f docker-compose.prod.yml up -d
+
+# 注意：此配置需要Docker Swarm模式支持deploy配置

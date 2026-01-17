@@ -1,0 +1,166 @@
+# HeartBeat Docker Compose 配置文件
+# 用于一键部署前后端应用到生产环境
+
+version: '3.8'
+
+services:
+  # 前端服务
+  heartbeat-frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      target: production
+    ports:
+      - "80:80"                 # 映射到宿主机80端口
+      - "443:443"               # 映射到宿主机443端口（HTTPS）
+    depends_on:
+      - heartbeat-backend
+    environment:
+      - NODE_ENV=production
+    networks:
+      - heartbeat-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # 后端服务
+  heartbeat-backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: production
+    ports:
+      - "8000:8000"             # 映射到宿主机8000端口（可选，主要用于调试）
+    environment:
+      - TUNEHUB_BASE_URL=https://music-dl.sayqz.com
+      - TUNEHUB_DB_PATH=/app/app/tunehub.sqlite
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+    volumes:
+      - heartbeat-data:/app/app              # SQLite数据库持久化
+      - heartbeat-logs:/var/log/heartbeat    # 日志持久化（如果需要）
+    networks:
+      - heartbeat-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+    user: app:app
+
+  # ==================== 开发环境配置 ====================
+
+  # 前端开发服务（可选）
+  heartbeat-frontend-dev:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      target: development
+    ports:
+      - "5173:5173"             # Vite开发服务器端口
+    volumes:
+      - ./frontend:/app          # 挂载前端源代码
+      - /app/node_modules        # 匿名卷，避免覆盖容器内的node_modules
+    environment:
+      - NODE_ENV=development
+      - VITE_API_BASE=http://localhost:8000
+    depends_on:
+      - heartbeat-backend-dev
+    networks:
+      - heartbeat-network
+    restart: on-failure
+    profiles:
+      - development
+
+  # 后端开发服务（可选）
+  heartbeat-backend-dev:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: development
+    ports:
+      - "8000:8000"             # FastAPI开发服务器端口
+      - "5678:5678"             # 可选：用于远程调试
+    volumes:
+      - ./backend:/app           # 挂载后端源代码
+      - heartbeat-data:/app/app  # 数据库持久化
+    environment:
+      - TUNEHUB_BASE_URL=https://music-dl.sayqz.com
+      - TUNEHUB_DB_PATH=/app/app/tunehub.sqlite
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - WATCHFILES_FORCE_POLLING=true  # 强制使用文件系统轮询，避免inotify问题
+    networks:
+      - heartbeat-network
+    restart: on-failure
+    profiles:
+      - development
+
+# ==================== 数据卷配置 ====================
+
+volumes:
+  # SQLite数据库持久化
+  heartbeat-data:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${PWD}/data/heartbeat
+      o: bind
+
+  # 日志持久化（可选）
+  heartbeat-logs:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${PWD}/logs/heartbeat
+      o: bind
+
+# ==================== 网络配置 ====================
+
+networks:
+  heartbeat-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16
+
+# ==================== 部署说明 ====================
+
+# 生产环境部署：
+# 1. 确保环境变量文件存在：
+#    mkdir -p data/heartbeat logs/heartbeat
+#    docker-compose up -d
+
+# 开发环境启动：
+# docker-compose --profile development up
+
+# 常用命令：
+# docker-compose up -d                    # 后台启动所有服务
+# docker-compose down                     # 停止所有服务
+# docker-compose logs -f                  # 查看实时日志
+# docker-compose logs -f heartbeat-backend # 查看后端日志
+# docker-compose restart heartbeat-backend # 重启后端服务
+# docker-compose exec heartbeat-backend sh # 进入后端容器
+
+# 环境变量覆盖（生产环境）：
+# 创建 .env 文件：
+# TUNEHUB_BASE_URL=https://music-dl.sayqz.com
+# 然后运行： docker-compose up -d
+
+# 监控和健康检查：
+# - 后端服务包含健康检查
+# - 前端通过Nginx提供静态文件
+# - 所有服务都有日志配置
