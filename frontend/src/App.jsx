@@ -61,6 +61,8 @@ export default function App() {
     confirm: "",
   });
   const [passwordStatus, setPasswordStatus] = useState("");
+  const [deleteForm, setDeleteForm] = useState({ password: "" });
+  const [deleteStatus, setDeleteStatus] = useState("");
   const [showIntro, setShowIntro] = useState(true);
   const [volume, setVolume] = useState(0.8);
   const [isMuted, setIsMuted] = useState(false);
@@ -314,6 +316,42 @@ export default function App() {
     setFavorites([]);
     setLogs([]);
     setProfile({ nickname: "", signature: "", avatar_url: "" });
+  };
+
+  const deleteAccount = async (event) => {
+    event.preventDefault();
+    setDeleteStatus("");
+    const token = localStorage.getItem("auth_token");
+    if (!token) {
+      setDeleteStatus("请先登录");
+      return;
+    }
+    if (!deleteForm.password) {
+      setDeleteStatus("请输入密码");
+      return;
+    }
+    const confirmed = window.confirm("确认注销账号？该操作不可恢复。");
+    if (!confirmed) return;
+    try {
+      const res = await fetch(`${API_BASE}/auth/delete`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ password: deleteForm.password }),
+      });
+      const data = await res.json();
+      if (!res.ok || data?.code !== 200) {
+        setDeleteStatus(data?.message || "注销失败");
+        return;
+      }
+      setDeleteStatus("账号已注销");
+      setDeleteForm({ password: "" });
+      await logout();
+    } catch (error) {
+      setDeleteStatus("网络错误");
+    }
   };
 
   const toggleFavorite = async (track) => {
@@ -775,22 +813,33 @@ export default function App() {
               搜索
             </button>
           </form>
-          <button
-            className="avatar"
-            type="button"
-            onClick={() => {
-              setDrawerOpen((value) => !value);
-              const token = localStorage.getItem("auth_token");
-              if (token) {
-                fetchProfile(token);
-                fetchLogs(token);
-              }
-            }}
-          >
-            {profile.avatar_url ? (
-              <img src={profile.avatar_url} alt="Avatar" />
-            ) : null}
-          </button>
+          <div className="account-entry">
+            <button
+              className="avatar"
+              type="button"
+              title="个人中心"
+              aria-label="个人中心"
+              onClick={() => {
+                setDrawerOpen((value) => !value);
+                const token = localStorage.getItem("auth_token");
+                if (token) {
+                  fetchProfile(token);
+                  fetchLogs(token);
+                }
+              }}
+            >
+              {profile.avatar_url ? (
+                <img src={profile.avatar_url} alt="Avatar" />
+              ) : (
+                <span className="avatar-fallback">
+                  {currentUser ? currentUser.slice(0, 1).toUpperCase() : "我"}
+                </span>
+              )}
+            </button>
+            <span className="account-label">
+              {currentUser ? "个人中心" : "登录/注册"}
+            </span>
+          </div>
         </header>
 
         <main className="content">
@@ -1041,13 +1090,20 @@ export default function App() {
                     {profile.avatar_url ? (
                       <img src={profile.avatar_url} alt="Avatar" />
                     ) : (
-                      <span>{currentUser.slice(0, 2).toUpperCase()}</span>
+                      <span className="profile-avatar-fallback">
+                        {currentUser.slice(0, 2).toUpperCase()}
+                      </span>
                     )}
                   </div>
                   <div>
                     <h4>{profile.nickname || currentUser}</h4>
                     <p>{profile.signature || "写点喜欢的音乐故事"}</p>
                   </div>
+                </div>
+                <div className="profile-actions">
+                  <button className="logout primary" type="button" onClick={logout}>
+                    退出登录
+                  </button>
                 </div>
                 <form className="profile-form" onSubmit={submitProfile}>
                   <label>
@@ -1161,47 +1217,69 @@ export default function App() {
                     />
                   ) : null}
                 </div>
-                <button className="logout" type="button" onClick={logout}>
-                  退出登录
-                </button>
+                <form className="delete-form" onSubmit={deleteAccount}>
+                  <label htmlFor="delete-password">注销账号</label>
+                  <input
+                    id="delete-password"
+                    type="password"
+                    placeholder="输入密码确认"
+                    value={deleteForm.password}
+                    onChange={(event) =>
+                      setDeleteForm({ password: event.target.value })
+                    }
+                  />
+                  <button type="submit">确认注销</button>
+                  {deleteStatus ? (
+                    <span className="profile-status">{deleteStatus}</span>
+                  ) : null}
+                </form>
               </div>
             ) : (
               <div className="profile-section">
-                <div className="auth-tabs">
-                  <button
-                    className={mode === "login" ? "active" : ""}
-                    onClick={() => setMode("login")}
-                    type="button"
-                  >
-                    登录
-                  </button>
-                  <button
-                    className={mode === "register" ? "active" : ""}
-                    onClick={() => setMode("register")}
-                    type="button"
-                  >
-                    注册
-                  </button>
+                <div className="auth-card">
+                  <div className="auth-header">
+                    <strong>{mode === "login" ? "欢迎回来" : "创建新账号"}</strong>
+                    <span>同步你的收藏与播放记录</span>
+                  </div>
+                  <div className="auth-tabs">
+                    <button
+                      className={mode === "login" ? "active" : ""}
+                      onClick={() => setMode("login")}
+                      type="button"
+                    >
+                      登录
+                    </button>
+                    <button
+                      className={mode === "register" ? "active" : ""}
+                      onClick={() => setMode("register")}
+                      type="button"
+                    >
+                      注册
+                    </button>
+                  </div>
+                  <form className="auth-form" onSubmit={submitAuth}>
+                    <input
+                      placeholder="用户名"
+                      value={username}
+                      onChange={(event) => setUsername(event.target.value)}
+                      required
+                    />
+                    <input
+                      type="password"
+                      placeholder="密码"
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      required
+                    />
+                    <button type="submit">
+                      {mode === "login" ? "立即登录" : "创建账号"}
+                    </button>
+                  </form>
+                  <div className="auth-welcome">
+                    新朋友可以直接 <span>注册账号</span> 开始体验。
+                  </div>
+                  {status ? <div className="auth-status">{status}</div> : null}
                 </div>
-                <form className="auth-form" onSubmit={submitAuth}>
-                  <input
-                    placeholder="用户名"
-                    value={username}
-                    onChange={(event) => setUsername(event.target.value)}
-                    required
-                  />
-                  <input
-                    type="password"
-                    placeholder="密码"
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    required
-                  />
-                  <button type="submit">
-                    {mode === "login" ? "立即登录" : "创建账号"}
-                  </button>
-                </form>
-                {status ? <div className="auth-status">{status}</div> : null}
               </div>
             )}
           </aside>

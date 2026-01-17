@@ -165,6 +165,10 @@ class PasswordPayload(BaseModel):
     new_password: str
 
 
+class DeleteAccountPayload(BaseModel):
+    password: str
+
+
 def get_conn() -> sqlite3.Connection:
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     conn.row_factory = sqlite3.Row
@@ -485,6 +489,30 @@ async def logout(request: Request):
         conn.execute("DELETE FROM sessions WHERE token = ?", (token,))
         conn.commit()
     return JSONResponse({"code": 200, "message": "已退出"})
+
+
+@app.post("/auth/delete")
+async def delete_account(request: Request, payload: DeleteAccountPayload):
+    username = get_username_from_token(request)
+    if not username:
+        return JSONResponse({"code": 401, "message": "未登录"}, status_code=401)
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT password_hash, salt FROM users WHERE username = ?",
+            (username,),
+        ).fetchone()
+        if not row:
+            return JSONResponse({"code": 404, "message": "账号不存在"}, status_code=404)
+        expected = hash_password(payload.password, row["salt"])
+        if expected != row["password_hash"]:
+            return JSONResponse({"code": 400, "message": "密码错误"}, status_code=400)
+        conn.execute("DELETE FROM sessions WHERE username = ?", (username,))
+        conn.execute("DELETE FROM favorites WHERE username = ?", (username,))
+        conn.execute("DELETE FROM profiles WHERE username = ?", (username,))
+        conn.execute("DELETE FROM login_logs WHERE username = ?", (username,))
+        conn.execute("DELETE FROM users WHERE username = ?", (username,))
+        conn.commit()
+    return JSONResponse({"code": 200, "message": "账号已注销"})
 
 
 @app.get("/profile")
