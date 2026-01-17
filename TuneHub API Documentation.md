@@ -381,6 +381,130 @@ GET /stats/types?period=\[today\]
 }
 ```
 
+## 安全与反爬
+
+TuneHub 针对账号体系与音乐资源访问提供基础反爬与安全机制，避免批量撞库、脚本化登录、盗链和热点资源批量抓取。
+
+### 18\. 获取图形验证码 GET
+
+GET /auth/captcha
+
+用于注册与登录前获取图形验证码。
+
+Response Example
+
+```json
+{
+  "code": 200,
+  "data": {
+    "captcha_id": "cpt_9f2a1b3c",
+    "image": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUg...",
+    "expires_in": 120
+  }
+}
+```
+
+### 19\. 获取登录加密公钥 GET
+
+GET /auth/public-key
+
+返回用于密码加密的 RSA 公钥。客户端需缓存 `key_id`，并在登录/注册时提交。
+
+Response Example
+
+```json
+{
+  "code": 200,
+  "data": {
+    "key_id": "rk_2025_01",
+    "public_key": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkq...\n-----END PUBLIC KEY-----",
+    "expires_in": 3600
+  }
+}
+```
+
+### 20\. 用户注册 POST
+
+POST /auth/register
+
+请求参数（JSON）：
+
+- `username`: 用户名
+- `password`: RSA 加密后的密码（Base64）
+- `key_id`: 公钥 ID
+- `captcha_id`: 图形验证码 ID
+- `captcha_code`: 图形验证码内容
+- `nonce`: 客户端随机字符串（长度 >= 16）
+- `timestamp`: 毫秒时间戳
+
+密码加密格式（客户端）：
+
+```
+payload = password + "." + nonce + "." + timestamp
+password = RSA_OAEP_SHA256_encrypt(payload, public_key)
+```
+
+Response Example
+
+```json
+{
+  "code": 200,
+  "message": "register success",
+  "data": {
+    "user_id": "u_123456"
+  }
+}
+```
+
+### 21\. 用户登录 POST
+
+POST /auth/login
+
+请求参数（JSON）：
+
+- `username`
+- `password`: RSA 加密后的密码（Base64）
+- `key_id`
+- `captcha_id`
+- `captcha_code`
+- `nonce`
+- `timestamp`
+
+Response Example
+
+```json
+{
+  "code": 200,
+  "message": "login success",
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "expires_in": 7200
+  }
+}
+```
+
+### 22\. 音乐反爬与防盗链
+
+针对 `type=url` 的真实音频地址返回，系统会启用短时效签名与访问校验：
+
+- 返回 302 时，实际资源 URL 会携带 `token`、`exp` 等签名参数。
+- 签名有效期默认 60 秒，过期需重新请求 `type=url`。
+- 支持配置 `Referer`/`User-Agent` 白名单，非法请求将返回 403。
+- 单 IP 访问频率限制：默认 60 req/min（可按平台或接口类型调整）。
+- 当触发风控时，会返回错误码 `429` 或 `403`，响应体包含 `risk_reason`。
+
+Response Example
+
+```json
+{
+  "code": 429,
+  "message": "too many requests",
+  "data": {
+    "risk_reason": "rate_limit_exceeded"
+  }
+}
+```
+
 ## 高级特性
 
 ### 🔄 自动换源 (Auto-Switch)
