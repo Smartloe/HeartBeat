@@ -86,7 +86,7 @@ sudo systemctl enable --now docker
 
 ```bash
 # 1. 克隆项目
-git clone https://github.com/yourusername/HeartBeat.git
+git clone https://github.com/smartloe/HeartBeat.git
 cd HeartBeat
 
 # 2. 创建必要的目录
