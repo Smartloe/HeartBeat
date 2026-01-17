@@ -600,6 +600,7 @@ body {
   padding: 20px;
   border: 1px solid var(--line);
   display: grid;
+  grid-template-rows: auto 1fr;
   gap: 12px;
   box-shadow: -18px 0 40px rgba(30, 20, 10, 0.18);
   transform: translateX(100%);
@@ -634,6 +635,10 @@ body {
 .chart-panel-body {
   display: grid;
   gap: 10px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+  -webkit-overflow-scrolling: touch;
 }
 
 .chart-list {

@@ -167,17 +167,14 @@ export default function App() {
     }
   };
 
-  const runSearch = async (event) => {
-    event.preventDefault();
-    const keyword = searchKeyword.trim();
-    if (!keyword) return;
+  const fetchSearchResults = async (keyword, source) => {
     setSearchLoading(true);
     setSearchError("");
     try {
       const params = new URLSearchParams({
         type: "search",
         keyword,
-        source: searchSource,
+        source,
         limit: "50",
       });
       const res = await fetch(`${API_BASE}/api/?${params.toString()}`);
@@ -196,6 +193,19 @@ export default function App() {
       setSearchLoading(false);
     }
   };
+
+  const runSearch = async (event) => {
+    event.preventDefault();
+    const keyword = searchKeyword.trim();
+    if (!keyword) return;
+    fetchSearchResults(keyword, searchSource);
+  };
+
+  useEffect(() => {
+    const keyword = searchKeyword.trim();
+    if (!keyword) return;
+    fetchSearchResults(keyword, searchSource);
+  }, [searchSource]);
 
   const submitAuth = async (event) => {
     event.preventDefault();
