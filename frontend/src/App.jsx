@@ -63,6 +63,10 @@ export default function App() {
   const [passwordStatus, setPasswordStatus] = useState("");
   const [deleteForm, setDeleteForm] = useState({ password: "" });
   const [deleteStatus, setDeleteStatus] = useState("");
+  const [confirmDialog, setConfirmDialog] = useState({
+    open: false,
+    type: null,
+  });
   const [showIntro, setShowIntro] = useState(true);
   const [volume, setVolume] = useState(0.8);
   const [isMuted, setIsMuted] = useState(false);
@@ -318,7 +322,7 @@ export default function App() {
     setProfile({ nickname: "", signature: "", avatar_url: "" });
   };
 
-  const deleteAccount = async (event) => {
+  const handleDeleteSubmit = (event) => {
     event.preventDefault();
     setDeleteStatus("");
     const token = localStorage.getItem("auth_token");
@@ -330,8 +334,20 @@ export default function App() {
       setDeleteStatus("请输入密码");
       return;
     }
-    const confirmed = window.confirm("确认注销账号？该操作不可恢复。");
-    if (!confirmed) return;
+    setConfirmDialog({ open: true, type: "delete" });
+  };
+
+  const deleteAccount = async () => {
+    setDeleteStatus("");
+    const token = localStorage.getItem("auth_token");
+    if (!token) {
+      setDeleteStatus("请先登录");
+      return;
+    }
+    if (!deleteForm.password) {
+      setDeleteStatus("请输入密码");
+      return;
+    }
     try {
       const res = await fetch(`${API_BASE}/auth/delete`, {
         method: "POST",
@@ -1101,8 +1117,22 @@ export default function App() {
                   </div>
                 </div>
                 <div className="profile-actions">
-                  <button className="logout primary" type="button" onClick={logout}>
+                  <button
+                    className="logout primary"
+                    type="button"
+                    onClick={() => setConfirmDialog({ open: true, type: "logout" })}
+                  >
                     退出登录
+                  </button>
+                  <button
+                    className="danger-outline"
+                    type="button"
+                    onClick={() => {
+                      setDeleteStatus("");
+                      setConfirmDialog({ open: true, type: "delete" });
+                    }}
+                  >
+                    注销账号
                   </button>
                 </div>
                 <form className="profile-form" onSubmit={submitProfile}>
@@ -1217,22 +1247,6 @@ export default function App() {
                     />
                   ) : null}
                 </div>
-                <form className="delete-form" onSubmit={deleteAccount}>
-                  <label htmlFor="delete-password">注销账号</label>
-                  <input
-                    id="delete-password"
-                    type="password"
-                    placeholder="输入密码确认"
-                    value={deleteForm.password}
-                    onChange={(event) =>
-                      setDeleteForm({ password: event.target.value })
-                    }
-                  />
-                  <button type="submit">确认注销</button>
-                  {deleteStatus ? (
-                    <span className="profile-status">{deleteStatus}</span>
-                  ) : null}
-                </form>
               </div>
             ) : (
               <div className="profile-section">
@@ -1324,6 +1338,67 @@ export default function App() {
                 <span>时间</span>
                 <p>{activeLog?.time || "-"}</p>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <div className={`confirm-modal ${confirmDialog.open ? "open" : ""}`}>
+          <div
+            className="confirm-backdrop"
+            onClick={() => setConfirmDialog({ open: false, type: null })}
+            aria-hidden="true"
+          />
+          <div className="confirm-panel" role="dialog" aria-modal="true">
+            <div className="confirm-header">
+              <strong>
+                {confirmDialog.type === "delete" ? "确认注销账号" : "确认退出登录"}
+              </strong>
+              <span>
+                {confirmDialog.type === "delete"
+                  ? "注销后将清空账号数据，且不可恢复。"
+                  : "退出后需要重新登录才能继续使用。"}
+              </span>
+            </div>
+            {confirmDialog.type === "delete" ? (
+              <div className="confirm-input">
+                <label htmlFor="confirm-delete-password">请输入密码确认</label>
+                <input
+                  id="confirm-delete-password"
+                  type="password"
+                  placeholder="账号密码"
+                  value={deleteForm.password}
+                  onChange={(event) =>
+                    setDeleteForm({ password: event.target.value })
+                  }
+                />
+                {deleteStatus ? (
+                  <span className="profile-status">{deleteStatus}</span>
+                ) : null}
+              </div>
+            ) : null}
+            <div className="confirm-actions">
+              <button
+                type="button"
+                className="confirm-cancel"
+                onClick={() => setConfirmDialog({ open: false, type: null })}
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                className="confirm-danger"
+                disabled={confirmDialog.type === "delete" && !deleteForm.password}
+                onClick={async () => {
+                  if (confirmDialog.type === "delete") {
+                    await deleteAccount();
+                  } else {
+                    await logout();
+                  }
+                  setConfirmDialog({ open: false, type: null });
+                }}
+              >
+                {confirmDialog.type === "delete" ? "确认注销" : "确认退出"}
+              </button>
             </div>
           </div>
         </div>
