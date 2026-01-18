@@ -1560,6 +1560,11 @@ export default function App() {
             onTimeUpdate={handleTimeUpdate}
             onLoadedMetadata={handleLoadedMetadata}
             onEnded={() => {
+              if (playMode === "single" && audioRef.current) {
+                audioRef.current.currentTime = 0;
+                audioRef.current.play().catch(() => {});
+                return;
+              }
               stopVisualizer();
               goNext();
             }}
